@@ -1,0 +1,61 @@
+const createTableQuery = `
+    CREATE TABLE IF NOT EXISTS mapdata (
+        id INT,
+        id_Key VARCHAR(255),
+        Date_Proc VARCHAR(255),
+        Lat_DNB FLOAT,
+        Lon_DNB FLOAT,
+        Rad_DNB FLOAT,
+        Date_Mscan VARCHAR(255),
+        Date_LTZ VARCHAR(255),
+        Line_DNB INT,
+        Sample_DNB INT,
+        Rad_I04 FLOAT,
+        QF_Detect INT,
+        QF_Bitflag INT,
+        SMI FLOAT,
+        Thr_SMI FLOAT,
+        SI FLOAT,
+        Thr_SI FLOAT,
+        SHI FLOAT,
+        Thr_SHI FLOAT,
+        LI FLOAT,
+        Thr_LI FLOAT,
+        Glint FLOAT,
+        Thr_Gl_SMI FLOAT,
+        Xcorr FLOAT,
+        Land_Mask INT,
+        EEZ VARCHAR(255),
+        FMZ VARCHAR(255),
+        MPA VARCHAR(255),
+        File_DNB VARCHAR(255),
+        File_GDNB VARCHAR(255),
+        File_I04 VARCHAR(255),
+        File_VNF VARCHAR(255),
+        File_EEZ VARCHAR(255),
+        File_FMZ VARCHAR(255),
+        File_MPA VARCHAR(255),
+        File_FLM VARCHAR(255),
+        File_LSM VARCHAR(255),
+        File_LTZ VARCHAR(255),
+        File_RLP VARCHAR(255),
+        Dist_RLP VARCHAR(255),
+        File_RLV VARCHAR(255),
+        Lat_Gring VARCHAR(255),
+        Lon_Gring VARCHAR(255),
+        Gran_List VARCHAR(255),
+        SOLZ_GDNBO VARCHAR(255),
+        SOLA_GDNBO VARCHAR(255),
+        SATZ_GDNBO VARCHAR(255),
+        SATA_GDNBO VARCHAR(255),
+        LUNZ_GDNBO VARCHAR(255),
+        LUNA_GDNBO VARCHAR(255)
+    );
+`;
+
+const insertCsvQuery = `INSERT INTO mapdata(id, id_Key, Date_Proc, Lat_DNB, Lon_DNB, Rad_DNB, Date_Mscan, Date_LTZ, Line_DNB, Sample_DNB, Rad_I04, QF_Detect, QF_Bitflag, SMI, Thr_SMI, SI, Thr_SI, SHI, Thr_SHI, LI, Thr_LI, Glint, Thr_Gl_SMI, Xcorr, Land_Mask, EEZ, FMZ, MPA, File_DNB, File_GDNB, File_I04, File_VNF, File_EEZ, File_FMZ, File_MPA, File_FLM, File_LSM, File_LTZ, File_RLP, Dist_RLP, File_RLV, Lat_Gring, Lon_Gring, Gran_List, SOLZ_GDNBO, SOLA_GDNBO, SATZ_GDNBO, SATA_GDNBO, LUNZ_GDNBO, LUNA_GDNBO) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`;
+
+module.exports = {
+    createTableQuery,
+    insertCsvQuery
+};
