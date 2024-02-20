@@ -1,81 +1,18 @@
-
 const fastcsv = require('fast-csv');
 const fs = require('fs');
 const path = require('path');
-const { createTableQuery, insertCsvQuery } = require('./sqlQueries');
+const { createTableQuery, countdata } = require('./sqlQueries');
 const { createTcpPool } = require('./db');
-const { progressBar } = require('./progress');
-
 
 const uploadDataToCloudSql = async (filenames) => {
   try {
     const connection = await createTcpPool();
-
     await connection.query(createTableQuery);
-    let rowsArray = [];
+    //await console.log( await connection.query(countdata));
 
     for (const filename of filenames) {
-      console.log(`converting CSV file "${filename}"`);
-      const totalRows = fs.readFileSync(filename).toString().split('\n').length - 1;
-      let rowCount = 0;
-
-      const preparingDataBar = progressBar(totalRows, 'Preparing csv data');
-      const toSqlBar = progressBar(totalRows, 'Inserting to Google Cloud SQL');
-
-      await new Promise((resolve) => {
-        fs.createReadStream(filename)
-          .pipe(fastcsv.parse({ headers: true }))
-          .transform((rows) => {
-            if (rowCount % 1000 === 0) {
-              preparingDataBar.tick(1);
-            }
-
-            rowCount++;
-
-            return rows;
-          })
-          .on('data', (rows) => {
-            rowsArray.push(Object.values(rows));
-          })
-          .on('end', async (data) => {
-            console.log(`CSV file "${filename}" successfully processed. ready to inserting to sql.`);
-
-            let num = 0;
-
-            while (num < rowCount) {
-              const batch = rowsArray.slice(num, num + 1000);
-
-              try {
-                await connection.query(insertCsvQuery, [batch]);
-                toSqlBar.tick(batch.length);
-              } catch (insertError) {
-                const truncateTable = `truncate table mapdata`;
-                await connection.query(truncateTable);
-
-                console.error('Error inserting data for row', num + 1, ':', insertError.message, insertError.sqlMessage);
-                console.log('note the rows not going to insert to sql check manualy the rows');
-              }
-
-              num += 1000;
-
-              await new Promise((resolve) => setTimeout(resolve, 5000)); 
-            }
-
-            num = 0;
-
-            rowCount = 0;
-
-            rowsArray.length = 0;
-
-            fs.unlink(filename, (unlinkErr) => {
-              if (unlinkErr) {
-                console.error('Error deleting file:', unlinkErr);
-              }
-            });
-
-            resolve();
-          });
-      });
+      console.log(`Converting CSV file "${filename}"`);
+      await processFile(filename, connection);
     }
 
     connection.end((err) => {
@@ -83,10 +20,58 @@ const uploadDataToCloudSql = async (filenames) => {
         console.error('Connection: ', err);
       }
     });
+
+    console.log('All files processed.');
   } catch (err) {
     console.error('Error connecting to MySQL:', err);
   }
 };
+
+const processFile = async (filename, connection) => {
+  const fileStream = fs.createReadStream(filename);
+  const csvStream = fastcsv.parse({ headers: true });
+  const rowsArray = [];
+  let headers;
+
+  await new Promise((resolve, reject) => {
+    fileStream.pipe(csvStream)
+      .on('error', reject)
+      .on('data', row => {
+        if (!headers) {
+          headers = Object.keys(row);
+        }
+        rowsArray.push(Object.values(row));
+        if (rowsArray.length >= 10000) {
+          insertRows(rowsArray, connection, headers);
+          rowsArray.length = 0;
+        }
+      })
+      .on('end', async () => {
+        if (rowsArray.length > 0) {
+          await insertRows(rowsArray, connection, headers);
+        }
+        console.log(`CSV file "${filename}" successfully processed.`);
+        resolve();
+      });
+  });
+};
+
+const insertRows = async (rowsArray, connection, headers) => {
+  try {
+    const placeholders = Array(headers.length).fill('?').join(', ');
+    const values = rowsArray.map(() => `(${placeholders})`).join(', ');
+    const insertQuery = `INSERT INTO mapdata (${headers.join(', ')}) VALUES ${values}`;
+    console.log(`${rowsArray.length} rows inserting...`);
+    await connection.query(insertQuery, await rowsArray.flat());
+
+    console.log(`${rowsArray.length} rows inserted successfully.`);
+    await delay(3000);
+  } catch (insertError) {
+    console.error('Error inserting data:', insertError.message);
+  }
+};
+
+const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 const directoryPath = './database';
 
